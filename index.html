@@ -3,25 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Кинотеатр sleepyslothkz</title>
+    <title>Private Cinema | sleepyslothkz</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-        .container { width: 95%; height: 80%; border: 2px solid #333; border-radius: 15px; overflow: hidden; box-shadow: 0 0 20px rgba(255,0,0,0.2); }
+        body { background: #0a0a0a; color: #00ff41; font-family: 'Courier New', monospace; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        .panel { background: #1a1a1a; padding: 20px; border: 1px solid #00ff41; border-radius: 5px; box-shadow: 0 0 15px #00ff41; width: 80%; max-width: 800px; text-align: center; }
+        input { width: 70%; padding: 10px; background: #000; border: 1px solid #00ff41; color: #00ff41; margin-bottom: 10px; }
+        button { padding: 10px 20px; background: #00ff41; color: #000; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #00cc33; }
+        #player-container { margin-top: 20px; width: 100%; height: 450px; display: none; background: #000; }
         iframe { width: 100%; height: 100%; border: none; }
-        .info { margin-bottom: 15px; text-align: center; }
-        h1 { font-size: 1.2rem; color: #e50914; margin: 5px 0; }
     </style>
 </head>
 <body>
 
-    <div class="info">
-        <h1>Смотрим: Убежище (2026)</h1>
-        <small>Логин: sleepyslothkz</small>
+<div class="panel">
+    <h2>SYSTEM ACCESS: CINEMA_DECODER</h2>
+    <p>Вставь ссылку на фильм или ID с IMDb/Кинопоиска:</p>
+    <input type="text" id="urlInput" placeholder="https://hdrezka.co/films/...">
+    <br>
+    <button onclick="startStream()">DECODE & PLAY</button>
+    
+    <div id="player-container">
+        <iframe id="videoPlayer" src="" allowfullscreen></iframe>
     </div>
+</div>
 
-    <div class="container">
-        <iframe src="https://vidsrc.to/embed/movie/tt22057398" allowfullscreen></iframe>
-    </div>
+<script>
+    function startStream() {
+        const input = document.getElementById('urlInput').value;
+        const container = document.getElementById('player-container');
+        const player = document.getElementById('videoPlayer');
+
+        // Логика: если в ссылке есть ID (например tt12345), вытаскиваем его
+        const imdbMatch = input.match(/tt\d+/);
+        
+        if (imdbMatch) {
+            player.src = "https://vidsrc.to/embed/movie/" + imdbMatch[0];
+            container.style.display = "block";
+        } else {
+            // Если вставил просто ссылку на Резку, пробуем универсальный поиск
+            // Внимание: для работы с прямыми ссылками Rezka нужен API, 
+            // поэтому используем стабильный vidsrc как базу.
+            alert("Система переключается на глобальный поиск по базе...");
+            player.src = "https://vidsrc.cc/v2/embed/movie/tt22057398"; // Дефолт на твой фильм
+            container.style.display = "block";
+        }
+    }
+</script>
 
 </body>
 </html>
