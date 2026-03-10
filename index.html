@@ -1,114 +1,30 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Hub | Cinema</title>
-    <style>
-        body { background: #0a0a0a; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; }
-        header { background: #111; padding: 30px; text-align: center; border-bottom: 2px solid #ff3e3e; }
-        h1 { margin: 0 0 20px 0; font-size: 2em; letter-spacing: 2px; }
-        .search-area { display: flex; justify-content: center; gap: 10px; }
-        input { padding: 12px; width: 300px; border-radius: 5px; border: none; background: #222; color: white; outline: none; }
-        button { padding: 12px 25px; background: #ff3e3e; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { background: #d32f2f; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 25px; padding: 30px; }
-        .card { background: #1b1b1b; border-radius: 10px; overflow: hidden; transition: transform 0.3s; cursor: pointer; border: 1px solid #333; }
-        .card:hover { transform: translateY(-10px); border-color: #ff3e3e; }
-        .card img { width: 100%; height: 270px; object-fit: cover; }
-        .card h3 { font-size: 0.9em; padding: 10px; margin: 0; height: 40px; overflow: hidden; text-align: center; }
-        /* Player Overlay */
-        .player { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
-        .player-content { width: 80%; height: 70%; position: relative; }
-        iframe { width: 100%; height: 100%; border: 2px solid #ff3e3e; border-radius: 10px; }
-        .close-btn { position: absolute; top: -40px; right: 0; color: white; cursor: pointer; font-size: 1.5em; font-weight: bold; }
-    </style>
-</head>
-<body>
+<input id="user" placeholder="GitHub username">
+<button onclick="search()">Search</button>
 
-<header>
-    <h1>🎬 MOVIE HUB</h1>
-    <div class="search-area">
-        <input id="search" placeholder="Введите название фильма...">
-        <button onclick="searchMovie()">НАЙТИ</button>
-    </div>
-</header>
-
-<div id="movies" class="grid">
-    </div>
-
-<div id="player" class="player">
-    <div class="player-content">
-        <span class="close-btn" onclick="closePlayer()">✖ ЗАКРЫТЬ</span>
-        <iframe id="video-frame" frameborder="0" allowfullscreen></iframe>
-    </div>
-    <p id="player-info" style="margin-top: 20px; color: #aaa;"></p>
-</div>
+<div id="result"></div>
 
 <script>
-// Для работы тебе нужен свой ключ с themoviedb.org. 
-// Пока я поставил демонстрационный ключ (он может перестать работать, если будет слишком много запросов).
-const API_KEY = "3fd2be37162ba06445d198cf103efe97"; 
 
-async function searchMovie() {
-    const q = document.getElementById("search").value;
-    if (!q) return;
-    
-    const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(q)}&language=ru-RU`);
-    const data = await res.json();
-    renderMovies(data.results);
+async function search(){
+
+const username=document.getElementById("user").value
+
+const res=await fetch(
+"https://api.github.com/users/"+username
+)
+
+const data=await res.json()
+
+document.getElementById("result").innerHTML=`
+
+<img src="${data.avatar_url}" width="100">
+<p>Name: ${data.name}</p>
+<p>Location: ${data.location}</p>
+<p>Bio: ${data.bio}</p>
+<p>Repos: ${data.public_repos}</p>
+
+`
+
 }
 
-function renderMovies(list) {
-    const container = document.getElementById("movies");
-    container.innerHTML = "";
-    
-    if (list.length === 0) {
-        container.innerHTML = "<h3>Ничего не найдено 😕</h3>";
-        return;
-    }
-
-    list.forEach(movie => {
-        if (!movie.poster_path) return;
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-            <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
-            <h3>${movie.title}</h3>
-        `;
-        // При клике открываем поиск на стороннем плеере
-        card.onclick = () => openMovie(movie.title, movie.release_date);
-        container.appendChild(card);
-    });
-}
-
-function openMovie(title, date) {
-    const year = date ? date.split('-')[0] : '';
-    document.getElementById("player").style.display = "flex";
-    document.getElementById("player-info").innerText = `Смотрим: ${title} (${year})`;
-    
-    // Используем бесплатный агрегатор плееров (например, Videocdn или подобные)
-    // Внимание: ссылки могут блокироваться AdBlock-ом
-    const searchUrl = `https://www.google.com/search?q=смотреть+онлайн+${encodeURIComponent(title)}+${year}+hdrezka`;
-    
-    // В этом учебном примере мы просто покажем, что фильм выбран. 
-    // На GitHub Pages сложно встроить пиратский плеер напрямую без прокси.
-    document.getElementById("video-frame").src = `https://vidsrc.to/embed/movie/${title}`; 
-    // Заметка: vidsrc — это популярный API для встраивания, но он требует ID фильма.
-}
-
-function closePlayer() {
-    document.getElementById("player").style.display = "none";
-    document.getElementById("video-frame").src = "";
-}
-
-// Загрузка популярных фильмов при старте
-window.onload = async () => {
-    const res = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=ru-RU`);
-    const data = await res.json();
-    renderMovies(data.results);
-};
 </script>
-
-</body>
-</html>
