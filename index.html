@@ -1,4 +1,15 @@
-<input id="user" placeholder="GitHub username">
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>GitHub Profile Finder</title>
+</head>
+
+<body>
+
+<h2>GitHub Profile Finder</h2>
+
+<input id="user" placeholder="username">
 <button onclick="search()">Search</button>
 
 <div id="result"></div>
@@ -7,24 +18,28 @@
 
 async function search(){
 
-const username=document.getElementById("user").value
+const username = document.getElementById("user").value
 
-const res=await fetch(
-"https://api.github.com/users/"+username
-)
+const res = await fetch("https://api.github.com/users/" + username)
 
-const data=await res.json()
+const data = await res.json()
+
+if(data.message){
+document.getElementById("result").innerHTML="User not found"
+return
+}
 
 document.getElementById("result").innerHTML=`
-
-<img src="${data.avatar_url}" width="100">
+<img src="${data.avatar_url}" width="120">
 <p>Name: ${data.name}</p>
 <p>Location: ${data.location}</p>
 <p>Bio: ${data.bio}</p>
-<p>Repos: ${data.public_repos}</p>
-
+<p>Followers: ${data.followers}</p>
 `
 
 }
 
 </script>
+
+</body>
+</html>
