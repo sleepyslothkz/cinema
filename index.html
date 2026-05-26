@@ -1,45 +1,202 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>GitHub Profile Finder</title>
-</head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Секундомер</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rubik:wght@400;700&display=swap');
 
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #fff;
+    font-family: 'Rubik', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    padding: 20px;
+  }
+
+  .display {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(56px, 18vw, 96px);
+    color: #00ff88;
+    text-shadow: 0 0 30px rgba(0,255,136,0.4);
+    letter-spacing: 4px;
+    transition: color 0.2s;
+  }
+
+  .display.running { color: #00ff88; }
+  .display.paused  { color: #ffaa00; text-shadow: 0 0 30px rgba(255,170,0,0.4); }
+
+  .ms {
+    font-size: clamp(28px, 8vw, 48px);
+    opacity: 0.6;
+  }
+
+  .buttons {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  button {
+    font-family: 'Rubik', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    padding: 16px 36px;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+    letter-spacing: 1px;
+  }
+
+  button:active { transform: scale(0.95); }
+
+  #btnStart {
+    background: #00ff88;
+    color: #0a0a0a;
+    min-width: 140px;
+  }
+
+  #btnLap {
+    background: transparent;
+    color: #fff;
+    border: 2px solid rgba(255,255,255,0.3);
+  }
+
+  #btnReset {
+    background: transparent;
+    color: #ff4455;
+    border: 2px solid rgba(255,68,85,0.4);
+  }
+
+  .laps {
+    width: 100%;
+    max-width: 340px;
+    max-height: 220px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .laps::-webkit-scrollbar { width: 4px; }
+  .laps::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+  .lap-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 16px;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .lap-num { color: rgba(255,255,255,0.4); }
+  .lap-time { color: #00ff88; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
 <body>
 
-<h2>GitHub Profile Finder</h2>
+<div class="display paused" id="display">
+  <span id="time">00:00</span><span class="ms">.<span id="ms">00</span></span>
+</div>
 
-<input id="user" placeholder="username">
-<button onclick="search()">Search</button>
+<div class="buttons">
+  <button id="btnStart" onclick="toggle()">СТАРТ</button>
+  <button id="btnLap" onclick="lap()">КРУГ</button>
+  <button id="btnReset" onclick="reset()">СБРОС</button>
+</div>
 
-<div id="result"></div>
+<div class="laps" id="laps"></div>
 
 <script>
+  let running = false;
+  let startTime = 0;
+  let elapsed = 0;
+  let lapCount = 0;
+  let raf;
 
-async function search(){
+  const display = document.getElementById('display');
+  const timeEl = document.getElementById('time');
+  const msEl = document.getElementById('ms');
+  const btnStart = document.getElementById('btnStart');
+  const lapsEl = document.getElementById('laps');
 
-const username = document.getElementById("user").value
+  function format(ms) {
+    const m = Math.floor(ms / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    const cs = Math.floor((ms % 1000) / 10);
+    return {
+      time: `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`,
+      ms: String(cs).padStart(2,'0')
+    };
+  }
 
-const res = await fetch("https://api.github.com/users/" + username)
+  function update() {
+    const now = elapsed + (Date.now() - startTime);
+    const f = format(now);
+    timeEl.textContent = f.time;
+    msEl.textContent = f.ms;
+    raf = requestAnimationFrame(update);
+  }
 
-const data = await res.json()
+  function toggle() {
+    if (!running) {
+      startTime = Date.now();
+      running = true;
+      btnStart.textContent = 'СТОП';
+      btnStart.style.background = '#ffaa00';
+      display.className = 'display running';
+      update();
+    } else {
+      elapsed += Date.now() - startTime;
+      running = false;
+      cancelAnimationFrame(raf);
+      btnStart.textContent = 'СТАРТ';
+      btnStart.style.background = '#00ff88';
+      display.className = 'display paused';
+    }
+  }
 
-if(data.message){
-document.getElementById("result").innerHTML="User not found"
-return
-}
+  function lap() {
+    if (!running) return;
+    lapCount++;
+    const now = elapsed + (Date.now() - startTime);
+    const f = format(now);
+    const item = document.createElement('div');
+    item.className = 'lap-item';
+    item.innerHTML = `<span class="lap-num">Круг ${lapCount}</span><span class="lap-time">${f.time}.${f.ms}</span>`;
+    lapsEl.prepend(item);
+  }
 
-document.getElementById("result").innerHTML=`
-<img src="${data.avatar_url}" width="120">
-<p>Name: ${data.name}</p>
-<p>Location: ${data.location}</p>
-<p>Bio: ${data.bio}</p>
-<p>Followers: ${data.followers}</p>
-`
-
-}
-
+  function reset() {
+    running = false;
+    cancelAnimationFrame(raf);
+    elapsed = 0;
+    lapCount = 0;
+    timeEl.textContent = '00:00';
+    msEl.textContent = '00';
+    btnStart.textContent = 'СТАРТ';
+    btnStart.style.background = '#00ff88';
+    display.className = 'display paused';
+    lapsEl.innerHTML = '';
+  }
 </script>
-
 </body>
-</html>
+  </html>
