@@ -1,202 +1,632 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Секундомер</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rubik:wght@400;700&display=swap');
+<title>GeoQuiz — World Capitals</title>
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --surface: #ffffff;
+    --surface2: #eef1f8;
+    --border: #dde2f0;
+    --text: #1a1d2e;
+    --muted: #8a90a8;
+    --accent: #4a6ff5;
+    --accent2: #7c5cf5;
+    --green: #16a34a;
+    --green-bg: rgba(22,163,74,0.10);
+    --red: #dc2626;
+    --red-bg: rgba(220,38,38,0.09);
+    --gold: #d97706;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: #0a0a0a;
-    color: #fff;
-    font-family: 'Rubik', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, sans-serif;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 40px;
-    padding: 20px;
+    padding: 24px 16px;
+    overflow-x: hidden;
   }
 
-  .display {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: clamp(56px, 18vw, 96px);
-    color: #00ff88;
-    text-shadow: 0 0 30px rgba(0,255,136,0.4);
-    letter-spacing: 4px;
-    transition: color 0.2s;
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(74,111,245,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 90%, rgba(124,92,245,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
   }
 
-  .display.running { color: #00ff88; }
-  .display.paused  { color: #ffaa00; text-shadow: 0 0 30px rgba(255,170,0,0.4); }
-
-  .ms {
-    font-size: clamp(28px, 8vw, 48px);
-    opacity: 0.6;
-  }
-
-  .buttons {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  button {
-    font-family: 'Rubik', sans-serif;
-    font-size: 18px;
-    font-weight: 700;
-    padding: 16px 36px;
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    transition: transform 0.1s, opacity 0.2s;
-    letter-spacing: 1px;
-  }
-
-  button:active { transform: scale(0.95); }
-
-  #btnStart {
-    background: #00ff88;
-    color: #0a0a0a;
-    min-width: 140px;
-  }
-
-  #btnLap {
-    background: transparent;
-    color: #fff;
-    border: 2px solid rgba(255,255,255,0.3);
-  }
-
-  #btnReset {
-    background: transparent;
-    color: #ff4455;
-    border: 2px solid rgba(255,68,85,0.4);
-  }
-
-  .laps {
+  .container {
+    position: relative;
+    z-index: 1;
     width: 100%;
-    max-width: 340px;
-    max-height: 220px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    max-width: 560px;
   }
 
-  .laps::-webkit-scrollbar { width: 4px; }
-  .laps::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+    position: relative;
+  }
 
-  .lap-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 16px;
-    background: rgba(255,255,255,0.05);
+  .logo {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(28px, 6vw, 40px);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Reset button */
+  .btn-reset {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
     border-radius: 10px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 16px;
-    animation: fadeIn 0.2s ease;
+    padding: 7px 13px;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn-reset:hover {
+    border-color: var(--red);
+    color: var(--red);
+    background: var(--red-bg);
   }
 
-  .lap-num { color: rgba(255,255,255,0.4); }
-  .lap-time { color: #00ff88; }
+  /* Best score banner */
+  .best-banner {
+    display: none;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    margin-bottom: 14px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .best-banner span { color: var(--gold); font-weight: 600; }
+  .best-banner.show { display: block; }
 
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: translateY(0); }
+  /* Stats bar */
+  .stats {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+    justify-content: space-between;
+  }
+
+  .stat {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 10px;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(74,111,245,0.04);
+  }
+
+  .stat-value {
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+
+  .stat-value.correct { color: var(--green); }
+  .stat-value.wrong   { color: var(--red); }
+  .stat-value.round   { color: var(--gold); }
+  .stat-value.progress{ color: var(--accent); }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Progress bar */
+  .progress-track {
+    height: 3px;
+    background: var(--border);
+    border-radius: 99px;
+    margin-bottom: 22px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* Question card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 24px 24px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(74,111,245,0.06);
+  }
+
+  .card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(74,111,245,0.25), transparent);
+  }
+
+  .question-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 18px;
+  }
+
+  .capital-display {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .capital-icon {
+    width: 52px;
+    height: 52px;
+    background: var(--surface2);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+  }
+
+  .capital-text { flex: 1; }
+
+  .capital-name {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(22px, 5vw, 30px);
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text);
+  }
+
+  .capital-hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Answers grid */
+  .answers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .answer-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 15px 13px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .answer-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(74,111,245,0.06), transparent);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .answer-btn:hover:not(:disabled)::before { opacity: 1; }
+  .answer-btn:hover:not(:disabled) {
+    border-color: rgba(74,111,245,0.45);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(74,111,245,0.10);
+  }
+
+  .answer-btn:active:not(:disabled) { transform: translateY(0); }
+  .answer-btn:disabled { cursor: default; }
+
+  .answer-flag { font-size: 22px; line-height: 1; flex-shrink: 0; }
+
+  .answer-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  /* States */
+  .answer-btn.correct {
+    background: var(--green-bg);
+    border-color: var(--green);
+    box-shadow: 0 0 18px rgba(22,163,74,0.13);
+  }
+  .answer-btn.correct .answer-name { color: var(--green); }
+
+  .answer-btn.wrong {
+    background: var(--red-bg);
+    border-color: var(--red);
+    box-shadow: 0 0 18px rgba(220,38,38,0.12);
+  }
+  .answer-btn.wrong .answer-name { color: var(--red); }
+
+  .answer-btn.dimmed { opacity: 0.3; }
+
+  /* Streak badge */
+  .streak-badge {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--surface);
+    border: 1.5px solid var(--gold);
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--gold);
+    font-weight: 500;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(217,119,6,0.15);
+    animation: fadeInRight 0.3s ease;
+  }
+
+  /* Round complete overlay */
+  .round-complete {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(244,246,251,0.93);
+    backdrop-filter: blur(8px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    padding: 24px;
+  }
+
+  .round-complete.show { display: flex; }
+
+  .round-emoji {
+    font-size: 64px;
+    margin-bottom: 16px;
+    animation: bounceIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .round-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(26px, 6vw, 40px);
+    font-weight: 900;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--gold), #f97316);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .round-score    { font-size: 16px; color: var(--muted); margin-bottom: 6px; }
+  .round-accuracy { font-size: 32px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+  .round-best     { font-size: 13px; color: var(--gold); margin-bottom: 28px; font-weight: 500; }
+
+  .round-buttons { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+  .btn-next-round {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 14px;
+    padding: 15px 36px;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 20px rgba(74,111,245,0.30);
+  }
+  .btn-next-round:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(74,111,245,0.38);
+  }
+
+  .btn-reset-round {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 15px 24px;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-reset-round:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+
+  /* Animations */
+  @keyframes fadeInRight {
+    from { opacity: 0; transform: translateX(16px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes bounceIn {
+    from { transform: scale(0.3); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%     { transform: translateX(-6px); }
+    40%     { transform: translateX(6px); }
+    60%     { transform: translateX(-4px); }
+    80%     { transform: translateX(4px); }
+  }
+  .shake { animation: shake 0.35s ease; }
+
+  @keyframes pulse-correct {
+    0%   { box-shadow: 0 0 0 0 rgba(22,163,74,0.35); }
+    70%  { box-shadow: 0 0 0 10px rgba(22,163,74,0); }
+    100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+  }
+  .pulse-correct { animation: pulse-correct 0.5s ease; }
+
+  /* Confirm dialog */
+  .confirm-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(244,246,251,0.88);
+    backdrop-filter: blur(6px);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .confirm-overlay.show { display: flex; }
+  .confirm-box {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 32px 28px;
+    text-align: center;
+    max-width: 320px;
+    width: 100%;
+    box-shadow: 0 8px 32px rgba(74,111,245,0.10);
+  }
+  .confirm-box h3 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 22px;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+  .confirm-box p { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+  .confirm-btns { display: flex; gap: 10px; justify-content: center; }
+  .confirm-yes {
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 24px;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .confirm-yes:hover { opacity: 0.88; }
+  .confirm-no {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 24px;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .confirm-no:hover { border-color: var(--accent); }
+
+  @media (max-width: 400px) {
+    .answers { grid-template-columns: 1fr; }
+    .card { padding: 22px 16px 18px; }
   }
 </style>
 </head>
 <body>
 
-<div class="display paused" id="display">
-  <span id="time">00:00</span><span class="ms">.<span id="ms">00</span></span>
+<div class="container">
+  <div class="header">
+    <div class="logo">GeoQuiz</div>
+    <div class="subtitle">World Capitals Challenge</div>
+    <button class="btn-reset" onclick="confirmReset()">↺ Reset</button>
+  </div>
+
+  <div class="best-banner" id="best-banner">
+    🏅 Best accuracy: <span id="best-value">—</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value correct" id="stat-correct">0</div>
+      <div class="stat-label">Correct</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value wrong" id="stat-wrong">0</div>
+      <div class="stat-label">Wrong</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value round" id="stat-round">1</div>
+      <div class="stat-label">Round</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value progress" id="stat-progress">0 / 0</div>
+      <div class="stat-label">Progress</div>
+    </div>
+  </div>
+
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+
+  <div class="card">
+    <div class="question-label">🌍 Which country's capital is…</div>
+    <div class="capital-display">
+      <div class="capital-icon" id="capital-flag">🏙️</div>
+      <div class="capital-text">
+        <div class="capital-name" id="capital-name">Loading…</div>
+        <div class="capital-hint">Name the country →</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="answers" id="answers"></div>
 </div>
 
-<div class="buttons">
-  <button id="btnStart" onclick="toggle()">СТАРТ</button>
-  <button id="btnLap" onclick="lap()">КРУГ</button>
-  <button id="btnReset" onclick="reset()">СБРОС</button>
+<div class="streak-badge" id="streak-badge">🔥 <span id="streak-count">0</span> streak!</div>
+
+<!-- Round complete overlay -->
+<div class="round-complete" id="round-complete">
+  <div class="round-emoji" id="round-emoji">🌟</div>
+  <div class="round-title" id="round-title">Round Complete!</div>
+  <div class="round-score" id="round-score"></div>
+  <div class="round-accuracy" id="round-accuracy"></div>
+  <div class="round-best" id="round-best"></div>
+  <div class="round-buttons">
+    <button class="btn-next-round" onclick="startNextRound()">Next Round →</button>
+    <button class="btn-reset-round" onclick="confirmReset()">↺ Reset All</button>
+  </div>
 </div>
 
-<div class="laps" id="laps"></div>
+<!-- Confirm reset dialog -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <h3>Reset Game?</h3>
+    <p>All progress, scores and records will be cleared. This cannot be undone.</p>
+    <div class="confirm-btns">
+      <button class="confirm-yes" onclick="doReset()">Yes, Reset</button>
+      <button class="confirm-no" onclick="closeConfirm()">Cancel</button>
+    </div>
+  </div>
+</div>
 
 <script>
-  let running = false;
-  let startTime = 0;
-  let elapsed = 0;
-  let lapCount = 0;
-  let raf;
-
-  const display = document.getElementById('display');
-  const timeEl = document.getElementById('time');
-  const msEl = document.getElementById('ms');
-  const btnStart = document.getElementById('btnStart');
-  const lapsEl = document.getElementById('laps');
-
-  function format(ms) {
-    const m = Math.floor(ms / 60000);
-    const s = Math.floor((ms % 60000) / 1000);
-    const cs = Math.floor((ms % 1000) / 10);
-    return {
-      time: `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`,
-      ms: String(cs).padStart(2,'0')
-    };
-  }
-
-  function update() {
-    const now = elapsed + (Date.now() - startTime);
-    const f = format(now);
-    timeEl.textContent = f.time;
-    msEl.textContent = f.ms;
-    raf = requestAnimationFrame(update);
-  }
-
-  function toggle() {
-    if (!running) {
-      startTime = Date.now();
-      running = true;
-      btnStart.textContent = 'СТОП';
-      btnStart.style.background = '#ffaa00';
-      display.className = 'display running';
-      update();
-    } else {
-      elapsed += Date.now() - startTime;
-      running = false;
-      cancelAnimationFrame(raf);
-      btnStart.textContent = 'СТАРТ';
-      btnStart.style.background = '#00ff88';
-      display.className = 'display paused';
-    }
-  }
-
-  function lap() {
-    if (!running) return;
-    lapCount++;
-    const now = elapsed + (Date.now() - startTime);
-    const f = format(now);
-    const item = document.createElement('div');
-    item.className = 'lap-item';
-    item.innerHTML = `<span class="lap-num">Круг ${lapCount}</span><span class="lap-time">${f.time}.${f.ms}</span>`;
-    lapsEl.prepend(item);
-  }
-
-  function reset() {
-    running = false;
-    cancelAnimationFrame(raf);
-    elapsed = 0;
-    lapCount = 0;
-    timeEl.textContent = '00:00';
-    msEl.textContent = '00';
-    btnStart.textContent = 'СТАРТ';
-    btnStart.style.background = '#00ff88';
-    display.className = 'display paused';
-    lapsEl.innerHTML = '';
-  }
-</script>
-</body>
-  </html>
+// ═══════════════════════════════════════════════════════════════
+// DATABASE
+// ═══════════════════════════════════════════════════════════════
+const COUNTRIES = [
+  // Europe
+  { name:"Albania",          capital:"Tirana",            flag:"🇦🇱", region:"Europe" },
+  { name:"Andorra",          capital:"Andorra la Vella",  flag:"🇦🇩", region:"Europe" },
+  { name:"Austria",          capital:"Vienna",            flag:"🇦🇹", region:"Europe" },
+  { name:"Belarus",          capital:"Minsk",             flag:"🇧🇾", region:"Europe" },
+  { name:"Belgium",          capital:"Brussels",          flag:"🇧🇪", region:"Europe" },
+  { name:"Bosnia and Herzegovina", capital:"Sarajevo",    flag:"🇧🇦", region:"Europe" },
+  { name:"Bulgaria",         capital:"Sofia",             flag:"🇧🇬", region:"Europe" },
+  { name:"Croatia",          capital:"Zagreb",            flag:"🇭🇷", region:"Europe" },
+  { name:"Cyprus",           capital:"Nicosia",           flag:"🇨🇾", region:"Europe" },
+  { name:"Czech Republic",   capital:"Prague",            flag:"🇨🇿", region:"Europe" },
+  { name:"Denmark",          capital:"Copenhagen",        flag:"🇩🇰", region:"Europe" },
+  { name:"Estonia",          capital:"Tallinn",           flag:"🇪🇪", region:"Europe" },
+  { name:"Finland",          capital:"Helsinki",          flag:"🇫🇮", region:"Europe" },
+  { name:"France",           capital:"Paris",             flag:"🇫🇷", region:"Europe" },
+  { name:"Germany",          capital:"Berlin",            flag:"🇩🇪", region:"Europe" },
+  { name:"Greece",           capital:"Athens",            flag:"🇬🇷", region:"Europe" },
+  { name:"Hungary",          capital:"Budapest",          flag:"🇭🇺", region:"Europe" },
+  { name:"Iceland",          capital:"Reykjavik",         flag:"🇮🇸", region:"Europe" },
+  { name:"Ireland",          capital:"Dublin",            flag:"🇮🇪", region:"Europe" },
+  { name:"Italy",            capital:"Rome",              flag:"🇮🇹", region:"Europe" },
+  { name:"Kosovo",           capital:"Pristina",          flag:"🇽🇰", region:"Europe" },
+  { name:"Latvia",           capital:"Riga",              flag:"🇱🇻", region:"Europe" },
+  { name:"Liechtenstein",    capital:"Vaduz",             flag:"🇱🇮", region:"Europe" },
+  { name:"Lithuania",        capital:"Vilnius",           flag:"🇱🇹", region:"Europe" },
+  { name:"Luxembourg",       capital:"Luxembourg City",   flag:"🇱🇺", region:"Europe" },
+  { name:"Malta",            capital:"Valletta",          flag:"🇲🇹", region:"Europe" },
+  { name:"Moldova",          capital:"Chisinau",          flag:"🇲🇩", region:"Europe" },
+  { name:"Monaco",           capital:"Monaco",            flag:"🇲🇨", region:"Europe" },
+  { name:"Montenegro",       capital:"Podgorica",         flag:"🇲🇪", region:"Europe" },
+  { name:"Netherlands",      capital:"Amsterdam",         flag:"🇳🇱", region:"Europe" },
+  { name:"North Macedonia",  capital:"Skopje",            flag:"🇲🇰", region:"Europe" },
+  { name:"Norway",           capital:"Oslo",              flag:"🇳🇴", region:"Europe" },
+  { name:"Poland",           capital:"Warsaw",            flag:"🇵🇱", region:"Europe" },
+  { name:"Portugal",         capital:"Lisbon",            flag:"🇵🇹", region:"Europe" },
+  { name:"Romania",          capital:"Bucharest",         flag:"🇷🇴", region:"Europe" },
+  { name:"Russia",           capital:"Moscow",            flag:"🇷🇺", region:"Europe" },
+  { name:"San Marino",       capital:"San Marino",        flag:"🇸🇲", region:"Europe" },
+  { name:"Serbia",           capital:"Belgrade",          flag:"🇷🇸", region:"Europe" },
+  { name:"Slovakia",         capital:"Bratislava",        flag:"🇸🇰", region:"Europe" },
+  { name:"Slovenia",         capital:"Ljubljana",         flag:"🇸🇮", region:"Europe" },
+  { name:"Spain",            capital:"Madrid",            flag:"🇪🇸", region:"Europe" },
+  { name:"Sweden",           capital:"Stockholm",         flag:"🇸🇪", region:"Europe" },
+  { name:"Switzerland",      capital:"Bern",              flag:"🇨🇭", region:"Europe" },
+  { name:"Ukraine",          capital:"Kyiv",              flag:"🇺🇦", region:"Europe" },
+  { name:"United Kingdom",   capital:"London",            flag:"🇬🇧", region:"Europe" },
+  { name:"Vatican City",     capital:"Vatican City",      flag:"🇻🇦", region:"Europe" },
+  // Asia
+  { name:"Afghanistan",      capital:"Kabul",             flag:"🇦🇫", region:"Asia" },
+  { name:"Armenia",          capital:"Yerevan",           flag:"🇦🇲", region:"Asia" },
+  { name:"Azerbaijan",       capital:"Baku",              flag:"🇦🇿", region:"Asia" },
+  { name:"Bahrain",          capital:"Manama",            flag:"🇧🇭", region:"Asia" },
+  { name:"Bangladesh",       capital:"Dhaka",             flag:"🇧🇩", region:"Asia" },
+  { name:"Bhutan",           capital:"Thimphu",           flag:"🇧🇹", region:"Asia" },
+  { name:"Brunei",           capital:"Bandar Seri Begawan",flag:"🇧🇳", region:"Asia" },
+  { name:"Cambodia",         capital:"Phnom Penh",        flag:"🇰🇭", region:"Asia" },
+  { name:"China",            capital:"Beijing",           flag:"🇨🇳", region:"Asia" },
+  { name:"Georgia",          capital:"Tbilisi",           flag:"🇬🇪", region:"Asia" },
+  { name:"India",            capital:"New Delhi",         flag:"🇮🇳", region:"Asia" },
+  { name:"Indonesia",        capital:"Jakarta",           flag:"🇮🇩", region:"Asia" },
+  { name:"Iran",             capital:"Tehran",   
